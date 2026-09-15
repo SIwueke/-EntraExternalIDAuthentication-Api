@@ -1,0 +1,39 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build output
+bin/
+obj/
+
+# Publish output
+publish/
+
+# Visual Studio Code
+.vscode/
+
+# NuGet
+packages/
+
+# Logs
+*.log
+
+# User-specific files
+*.user
+*.userosscache
+*.sln.docstates
+
+# ASP.NET Core development certificates
+*.pfx
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Test results
+TestResults/
+
+# Coverage
+coverage/
