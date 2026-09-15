@@ -39,7 +39,8 @@ public class MfaAuthorizationHandler
             return;
         }
 
-        var valid =        await _mfaSessionStore.IsValidAsync(
+        var valid =
+            await _mfaSessionStore.IsValidAsync(
                 sessionId,
                 entraObjectId);
 
