@@ -41,7 +41,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Data Protection
 builder.Services.AddDataProtection();
 
-builder.Services.AddDistributedMemoryCache();
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration =
+        builder.Configuration.GetConnectionString("Redis");
+
+    options.InstanceName = "ExternalIdDemo:";
+});
 
 builder.Services.AddScoped<IMfaService, MfaService>();
 

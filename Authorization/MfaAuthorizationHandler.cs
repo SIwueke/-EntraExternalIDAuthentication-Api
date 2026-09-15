@@ -1,61 +1,45 @@
-﻿using ExternalIdDemo.Api.Interfaces;
+﻿using System.Security.Claims;
+using ExternalIdDemo.Api.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
 
 namespace ExternalIdDemo.Api.Authorization;
 
 public class MfaAuthorizationHandler
     : AuthorizationHandler<MfaRequirement>
 {
-    private readonly IMfaSessionStore _sessionStore;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IMfaSessionStore _mfaSessionStore;
 
     public MfaAuthorizationHandler(
-        IMfaSessionStore sessionStore,
-        IHttpContextAccessor httpContextAccessor)
+        IHttpContextAccessor httpContextAccessor,
+        IMfaSessionStore mfaSessionStore)
     {
-        _sessionStore = sessionStore;
         _httpContextAccessor = httpContextAccessor;
+        _mfaSessionStore = mfaSessionStore;
     }
 
-    protected override async Task HandleRequirementAsync(
-        AuthorizationHandlerContext context,
-        MfaRequirement requirement)
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context,  MfaRequirement requirement)
     {
-        var httpContext =
-            _httpContextAccessor.HttpContext;
+        var httpContext =   _httpContextAccessor.HttpContext;
 
-        if (httpContext is null)
+        var entraObjectId =  context.User.FindFirst("oid")?.Value
+            ?? context.User.FindFirst(
+                "http://schemas.microsoft.com/identity/claims/objectidentifier"
+            )?.Value
+            ?? context.User.FindFirst(
+                ClaimTypes.NameIdentifier
+            )?.Value;
+
+        var sessionId =   httpContext?.Request.Cookies["mfa_session"];
+
+        if (
+            string.IsNullOrWhiteSpace(entraObjectId) ||
+            string.IsNullOrWhiteSpace(sessionId))
         {
             return;
         }
 
-        var entraObjectId =
-            context.User.FindFirstValue("oid")
-            ?? context.User.FindFirstValue(
-                "http://schemas.microsoft.com/identity/claims/objectidentifier")
-            ?? context.User.FindFirstValue(
-                ClaimTypes.NameIdentifier);
-
-        if (string.IsNullOrWhiteSpace(entraObjectId))
-        {
-            return;
-        }
-
-        if (!httpContext.Request.Cookies.TryGetValue(
-                "mfa_session",
-                out var sessionId))
-        {
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(sessionId))
-        {
-            return;
-        }
-
-        var valid =
-            await _sessionStore.IsValidAsync(
+        var valid =        await _mfaSessionStore.IsValidAsync(
                 sessionId,
                 entraObjectId);
 
