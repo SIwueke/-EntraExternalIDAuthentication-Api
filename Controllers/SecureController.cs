@@ -5,21 +5,21 @@ using Microsoft.Identity.Web.Resource;
 
 namespace ExternalIdDemo.Api.Controllers
 {
-    [Authorize]
-    [RequiredScope("access_as_user")]
-    [MfaRequired]
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/secure")]
     public class SecureController : ControllerBase
     {
+        [Authorize(Policy = "MfaRequired")]
+        [RequiredScope("access_as_user")]
         [HttpGet]
         public IActionResult Get()
         {
-            return Ok(User.Claims.Select(c => new
+            return Ok(new
             {
-                c.Type,
-                c.Value
-            }));
+                message = "You have accessed the secure endpoint.",
+                authenticated = true,
+                mfa = true
+            });
         }
     }
 }
