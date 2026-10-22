@@ -19,43 +19,26 @@ public class MfaController : ControllerBase
         _mfaSessionStore = mfaSessionStore;
     }
     //temp
-    [HttpGet("status")]
-    public async Task<IActionResult> GetStatus()
-    {
-        var claims = User.Claims
-            .Select(c => new
-            {
-                c.Type,
-                c.Value
-            })
-            .ToList();
-
-        var entraObjectId = GetEntraObjectId();
-
-        if (entraObjectId is null)
-        {
-            return Unauthorized(new
-            {
-                message = "Entra object ID (oid) was not found.",
-                claims
-            });
-        }
-
-        var result =
-            await _mfaService.GetStatusAsync(
-                entraObjectId);
-
-        return Ok(result);
-    }
     //[HttpGet("status")]
     //public async Task<IActionResult> GetStatus()
     //{
+    //    var claims = User.Claims
+    //        .Select(c => new
+    //        {
+    //            c.Type,
+    //            c.Value
+    //        })
+    //        .ToList();
+
     //    var entraObjectId = GetEntraObjectId();
 
     //    if (entraObjectId is null)
     //    {
-    //        return Unauthorized(
-    //            "Entra object ID (oid) was not found.");
+    //        return Unauthorized(new
+    //        {
+    //            message = "Entra object ID (oid) was not found.",
+    //            claims
+    //        });
     //    }
 
     //    var result =
@@ -64,6 +47,23 @@ public class MfaController : ControllerBase
 
     //    return Ok(result);
     //}
+    [HttpGet("status")]
+    public async Task<IActionResult> GetStatus()
+    {
+        var entraObjectId = GetEntraObjectId();
+
+        if (entraObjectId is null)
+        {
+            return Unauthorized(
+                "Entra object ID (oid) was not found.");
+        }
+
+        var result =
+            await _mfaService.GetStatusAsync(
+                entraObjectId);
+
+        return Ok(result);
+    }
 
     [HttpPost("enrol")]
     public async Task<IActionResult> Enrol()
@@ -161,6 +161,32 @@ public class MfaController : ControllerBase
         return objectId;
     }
 
+    [HttpPost("clear-session")]
+    public async Task<IActionResult> ClearSession()
+    {
+        var sessionId =
+            Request.Cookies["mfa_session"];
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            await _mfaSessionStore.RemoveAsync(sessionId);
+        }
+
+        Response.Cookies.Delete(
+            "mfa_session",
+            new CookieOptions
+            {
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Path = "/"
+            });
+
+        return Ok(new
+        {
+            success = true,
+            message = "MFA session cleared."
+        });
+    }
 
     [HttpPost("verify")]
     public async Task<IActionResult> Verify([FromBody] VerifyMfaRequest request)
